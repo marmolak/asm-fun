@@ -1,28 +1,31 @@
+[bits 64]
+
 global _start
 section text
 _start:
 	call where
 where:
 	; address of message
-	pop rcx
-	add cx, 38
+	pop rsi
+	add si, 39
 
-	; syscall number
+	; syscall number - 1 write
 	xor rax,rax
-	add al,4
+	inc al
+
 	; param 1 -  stdout
-	xor rbx,rbx
-	inc bl
+	xor rdi,rdi
+	inc di
+
 	; message len
 	xor rdx,rdx
-	add dl,5
-	int 80h	
+	add dx, 5
+	syscall
 
 	; call exit syscall
-	xor rax, rax
-	inc al
-	xor rbx,rbx
-	inc bl
-	inc bl
-	int 80h
+	mov rax, 60
+	xor rdi, rdi
+	inc di
+	inc di
+	syscall
 	db 'Hell', 0AH

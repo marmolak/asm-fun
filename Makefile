@@ -3,4 +3,4 @@ shellcode:
 	ld -o shellcode shellcode.o
 
 loader:
-	gcc -o loader loader.c
+	gcc -g -masm=intel -o loader loader.c

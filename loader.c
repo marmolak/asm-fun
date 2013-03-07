@@ -210,6 +210,7 @@ int main (void)
 			perror ("accept error!");
 			continue;
 		}
+		printf ("CONN: client: %s\n", inet_ntoa (client.sin_addr));
 		run_child (client_sock);
 	}
 

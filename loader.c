@@ -145,6 +145,7 @@ void run_child (int sock) {
 	} else if ( pid == 0 ) {
 		dup2 (sock, STDOUT_FILENO);
 		dup2 (sock, STDIN_FILENO);
+		dup2 (sock, STDERR_FILENO);
 		close (sock);
 		
 		child.pid = 1;

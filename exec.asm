@@ -21,6 +21,8 @@ where:
 	
 	; array
 	push 0
+
+	; skip /bin/cat\0
 	add rdi, 9
 	push rdi
 	sub rdi, 9

@@ -14,7 +14,8 @@
 
 #include <errno.h>
 
-const int loader_len = 8;
+static const int loader_len = 8;
+static const int area_size = 4096;
 
 void loader_impl (long *const code, char *const stack) {
 
@@ -36,7 +37,7 @@ void loader (long *const code, char *const stack)
 {
 	/* prepare machine */
 	/* stack grows down */
-	char *const stack_top = stack + 4095;
+	char *const stack_top = stack + (area_size - 1);
 
 	/* set rbp and rsp properly after start - save start to stack */
 	/* must be aligned */
@@ -120,12 +121,12 @@ void child_work (void)
 	}
 
 	/* allocate memory for code and stack */
-	long *const code = mmap (NULL, 4096, PROT_EXEC | PROT_WRITE | PROT_READ, MAP_PRIVATE |  MAP_ANONYMOUS, 0, 0);
+	long *const code = mmap (NULL, area_size, PROT_EXEC | PROT_WRITE | PROT_READ, MAP_PRIVATE |  MAP_ANONYMOUS, 0, 0);
 	if ( code == MAP_FAILED ) {
 		perror ("mmap failed");
 		exit (EXIT_FAILURE);
 	}
-	char *const stack = mmap (NULL, 4096, PROT_EXEC | PROT_WRITE | PROT_READ, MAP_PRIVATE |  MAP_ANONYMOUS, 0, 0);
+	char *const stack = mmap (NULL, area_size, PROT_EXEC | PROT_WRITE | PROT_READ, MAP_PRIVATE |  MAP_ANONYMOUS, 0, 0);
 	if ( stack == MAP_FAILED ) {
 		perror ("mmap failed");
 		exit (EXIT_FAILURE);
@@ -141,7 +142,7 @@ void child_work (void)
 	memcpy ((code + 1), runcode, 53);
 #else
 	/* read shell code */
-	const int bsize = 1024 - loader_len;
+	const int bsize = area_size - loader_len;
 	/* code + 1 == skip 8 bytes */
 	int rt = read (STDIN_FILENO, (code + 1), bsize);
 	if ( rt < 0 ) {

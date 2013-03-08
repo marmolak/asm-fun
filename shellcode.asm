@@ -1,7 +1,7 @@
 [bits 64]
 
 global _start
-section text
+section .text
 _start:
 	call where
 where:

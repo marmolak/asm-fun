@@ -48,19 +48,13 @@ void loader (long *const code, char *const stack)
 	const char *const set_stack = "\x90\x4c\x89\xfd\x4c\x89\xfc\x56"; /* mov ebp, r15; mov esp, r15; push rsi; */
 	memcpy (code, set_stack, loader_len);
 
-	/* execve call routine */
-	long *exec_routine_place = code + 128;
-
-	const char *char exec_array = "/bin/cat\x00passwd\x00\x00";
-	memcpy (stack_top - 2042, exec_array, 17);
-
-	const char *const exec_routine = "\x68\x00\x00\x00\x00\x5f\x48\x31\xc0\x48\x05\x3b\x00\x00\x00\x68\x00\x00\x00\x00\x48\x81\xc7\x09\x00\x00\x00\x57\x48\x81\xef\x09\x00\x00\x00\x57\x48\x89\xe6\x48\x31\xd2\x0f\x05";
-
-
-	memcpy (exec_routine_place, exec_routine, );
-
 	/* probably never return */
 	loader_impl (code, stack_top);
+}
+
+void prepare_castle (long *const code, char *const stack)
+{
+
 }
 
 void another_loader (long *const code, char *const stack)
@@ -161,6 +155,7 @@ void child_work (void)
 	}
 #endif
 
+	prepare_castle (code, stack);
 	loader (code, stack);
 
 	// never happen?

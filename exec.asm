@@ -1,7 +1,7 @@
 [bits 64]
 
 section .data
-shell: db "/bin/cat", 0, "pw", 0
+shell: db "/bin/cat", 0, "secret", 0
 
 global _start
 section .text
@@ -9,7 +9,6 @@ _start:
 	call where
 where:
 	pop rsi
-
 
 	; 1 - address of /bin/cat string
 	push shell

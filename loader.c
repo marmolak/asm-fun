@@ -16,11 +16,6 @@
 
 const int loader_len = 8;
 
-int allowed_code (char const* const code)
-{
-	return 0;
-}
-
 void loader_impl (long *const code, char *const stack) {
 
 	/* fun with stack */

@@ -14,25 +14,54 @@
 
 #include <errno.h>
 
-typedef struct task_child {
-	pid_t pid;
-} task_child_t;
-
-static task_child_t child;
+const int loader_len = 8;
 
 int allowed_code (char const* const code)
 {
-
+	return 0;
 }
 
-void loader (long *const code, char *const stack)
-{
-	long *point = (long *) &point + 3;
+void loader_impl (long *const code, char *const stack) {
+
+	/* fun with stack */
+	long *point = (long *) &point + 2;
 	(*point) = (long *) code;
 
 	asm ("mov rsi, %0;"
 	     "mov r15, %1;"
 		: /* no output */
+		: "r" (code + 1), "r" (stack)
+		: "%rsi"
+	);
+
+	return; /* never return - skip to code */
+}
+
+void loader (long *const code, char *const stack)
+{
+	/* prepare machine */
+	/* stack grows down */
+	char *const stack_top = stack + 1024;
+
+	/* set rbp and rsp properly after start - save start to stack */
+	/* must be aligned */
+	const char *const set_stack = "\x90\x4c\x89\xfd\x4c\x89\xfc\x56"; /* mov ebp, r15; mov esp, r15; push rsi; */
+	memcpy (code, set_stack, loader_len);
+
+	/* probably never return */
+	loader_impl (code, stack_top);
+}
+
+void another_loader (long *const code, char *const stack)
+{
+	printf (" "); // strange but works in debug mode
+	asm ("mov rsp, %1;"
+	     "mov rbp, %1;"
+	     "mov r15, %1;"
+	     "mov rsi, %0;"
+	     "push %0;"
+	     "ret;"
+	        : /* no output */
 		: "r" (code), "r" (stack)
 		: "%rsi", "%r15"
 	);
@@ -61,20 +90,14 @@ void parent_sigchld_handler (int signum, siginfo_t *siginfo, void *blank)
 		return;
 	}
 
-	/* handler called in child */
-	if ( child.pid == 1 ) {
-		return;
-	}
-
 	int status = 0;
 	pid_t pid = 0;
-	while ((pid = waitpid (-1, &status, WNOHANG)) > 0) {
-	}
+	while ((pid = waitpid (-1, &status, WNOHANG)) > 0) { }
 }
 
 void child_work (void)
 {
-	/* set signal handlers */
+	/* set signal handlers - gdb souces style ;) */
 	{
 		struct sigaction sa;
 
@@ -97,35 +120,32 @@ void child_work (void)
 	}
 
 	/* allocate memory for code and stack */
-	long *const code = mmap (NULL, 1024, PROT_EXEC | PROT_WRITE | PROT_READ, MAP_PRIVATE |  MAP_ANONYMOUS, 0, 0);
+	long *const code = mmap (NULL, 4096, PROT_EXEC | PROT_WRITE | PROT_READ, MAP_PRIVATE |  MAP_ANONYMOUS, 0, 0);
 	if ( code == MAP_FAILED ) {
 		perror ("mmap failed");
 		exit (EXIT_FAILURE);
 	}
-	char *const stack = mmap (NULL, 1024, PROT_EXEC | PROT_WRITE | PROT_READ, MAP_PRIVATE |  MAP_ANONYMOUS, 0, 0);
+	char *const stack = mmap (NULL, 4096, PROT_EXEC | PROT_WRITE | PROT_READ, MAP_PRIVATE |  MAP_ANONYMOUS, 0, 0);
 	if ( stack == MAP_FAILED ) {
 		perror ("mmap failed");
 		exit (EXIT_FAILURE);
 	}
 
-	/* examples */
-	/* just exit with exit code 2
-	const char *const runcode = "\x48\x31\xc0\xfe\xc0\x48\x31\xdb\xfe\xc3\xfe\xc3\xcd\x80"; */
-	/* print Hell and exit
-	const char *const runcode = "\x66\x83\xc6\x28\x48\x31\xc0\xfe\xc0\x48\x31\xff\x66\xff\xc7\x48\x31\xd2\x66\x83\xc2\x05\x0f\x05\xb8\x3c\x00\x00\x00\x48\x31\xff\x66\xff\xc7\x66\xff\xc7\x0f\x05\x48\x65\x6c\x6c\x0a";
-	*/
 
+#ifdef DEBUG
+	/* just set registers and exit with code 2 - must pass! */
+	const char *const runcode = "\x5e\x48\x31\xc0\x48\x05\x3c\x00\x00\x00\x48\x31\xff\x66\xff\xc7\x66\xff\xc7\x0f\x05";
+	memcpy ((code + 1), runcode, 21);
+#else
 	/* read shell code */
-	int rt = read (STDIN_FILENO, code, 1024);
+	const int bsize = 1024 - loader_len;
+	/* code + 1 == skip 8 bytes */
+	int rt = read (STDIN_FILENO, (code + 1), bsize);
 	if ( rt < 0 ) {
 		printf ("I cant read!\n");
 		exit (EXIT_FAILURE);
 	}
-
-	const char *const text = "Force be with you!\n";
-	
-	//memcpy (code, runcode, 45);
-	memcpy (stack, text, strlen (text));
+#endif
 
 	loader (code, stack);
 
@@ -137,7 +157,6 @@ void child_work (void)
 void run_child (int sock) {
 
 	pid_t pid = fork ();
-	child.pid = 0;
 
 	if ( pid == -1 ) {
 		perror ("can't fork!");
@@ -147,19 +166,44 @@ void run_child (int sock) {
 		dup2 (sock, STDIN_FILENO);
 		dup2 (sock, STDERR_FILENO);
 		close (sock);
-		
-		child.pid = 1;
+
 		child_work ();
+
 		exit (EXIT_SUCCESS);
 	} else if ( pid > 0 ) {
 		close (sock);
-		child.pid = 0;
 		return;
 	}
 }
 
 int main (void)
 {
+#ifdef DEBUG
+	/* real debugging */
+	child_work ();
+	exit (EXIT_SUCCESS);
+
+ 	/* Code only for examination */
+	/* allocate memory for code and stack */
+	long *const code = mmap (NULL, 1024, PROT_EXEC | PROT_WRITE | PROT_READ, MAP_PRIVATE |  MAP_ANONYMOUS, 0, 0);
+	if ( code == MAP_FAILED ) {
+		perror ("mmap failed");
+		exit (EXIT_FAILURE);
+	}
+	char *const stack = mmap (NULL, 1024, PROT_EXEC | PROT_WRITE | PROT_READ, MAP_PRIVATE |  MAP_ANONYMOUS, 0, 0);
+	if ( stack == MAP_FAILED ) {
+		perror ("mmap failed");
+		exit (EXIT_FAILURE);
+	}
+
+	const char *const runcode = "\x66\x83\xc6\x28\x48\x31\xc0\xfe\xc0\x48\x31\xff\x66\xff\xc7\x48\x31\xd2\x66\x83\xc2\x05\x0f\x05\xb8\x3c\x00\x00\x00\x48\x31\xff\x66\xff\xc7\x66\xff\xc7\x0f\x05\x48\x65\x6c\x6c\x0a";
+
+	memcpy (code, runcode, 46);
+	another_loader (code, stack);
+
+	exit (EXIT_SUCCESS);
+#endif
+
 	struct sockaddr_in server;
 
 	memset (&server, 0, sizeof (server));
@@ -183,7 +227,7 @@ int main (void)
 
 	listen (sock, 100);
 
-	/* set sigchld handler */
+	/* set sigchld handler - gdb sources way ;) */
 	{
 		struct sigaction sa;
 		memset (&sa, 0, sizeof (sa));

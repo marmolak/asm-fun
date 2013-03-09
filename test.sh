@@ -14,7 +14,8 @@ OUTPUT=`perl ./blob.pl; cat blob.bin | nc localhost 12345`
 if [ "$OUTPUT" == "Hell" ]; then
 	echo "PASS";
 else
-	echo "FAIL";
+	echo -n "FAIL with: ";
+	echo $OUTPUT;
 fi
 
 kill $LOADER_PID

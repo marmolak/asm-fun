@@ -106,10 +106,6 @@ void child_work (void)
 		sa.sa_sigaction = &child_sig_handler;
 		sa.sa_flags = SA_SIGINFO;
 
-		sigset_t oset;
-		sigprocmask (0, NULL, &oset);
-		sa.sa_mask = oset;
-
 		int ret = 0;
 		ret = sigaction (SIGILL, &sa, NULL);
 		if ( ret == -1 ) { exit (EXIT_FAILURE); }
@@ -238,10 +234,6 @@ int main (void)
 		memset (&sa, 0, sizeof (sa));
 		sa.sa_sigaction = &parent_sigchld_handler;
 		sa.sa_flags = SA_SIGINFO;
-
-		sigset_t oset;
-		sigprocmask (0, NULL, &oset);
-		sa.sa_mask = oset;
 
 		int ret = sigaction (SIGCHLD, &sa, NULL);
 		if ( ret == -1 ) { exit (EXIT_FAILURE); }

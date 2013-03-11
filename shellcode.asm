@@ -7,7 +7,7 @@ _start:
 where:
 	; address of message
 	pop rsi
-	add si, 48
+	add si, 41
 
 	; syscall number - 1 write
 	xor rax,rax

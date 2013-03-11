@@ -1,4 +1,8 @@
-open my $fh, '<', 'blob.bin' or die "$!";
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+open my $fh, '<', 'blob.bin' or die "can't opeb blob.bin! $!\n";
 
 binmode $fh;
 

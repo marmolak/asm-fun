@@ -15,7 +15,14 @@ if [ ! -x "./loader" ]; then
 fi
 
 ./loader > /dev/null &
+sleep 1;
 LOADER_PID=$!
+kill -0 $LOADER_PID 2> /dev/null; 
+RET=$?
+if [ $RET == 1 ]; then
+	echo "FAIL run loader";
+	exit;
+fi
 
 rm -f blob.bin 2> /dev/null
 OUTPUT=`cat shellcode-test.bin | nc localhost 12345`

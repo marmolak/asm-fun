@@ -1,6 +1,8 @@
 shellcode: shellcode.asm
 	nasm -f elf64 -o shellcode.o shellcode.asm
 	ld -o shellcode shellcode.o
+shellcode-test: shellcode.asm
+	nasm -o shellcode-test.bin shellcode.asm
 
 exec: exec.asm
 	nasm -f elf64 -o exec.o exec.asm

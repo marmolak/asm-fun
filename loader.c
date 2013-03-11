@@ -36,7 +36,6 @@ void prepare_castle (long *const code, char *const stack)
 
 }
 
-
 void child_sig_handler (int signum, siginfo_t *siginfo, void *blank)
 {
 	switch ( signum ) {
@@ -92,6 +91,12 @@ void child_work (void)
 	char *const stack = mmap (NULL, area_size, PROT_EXEC | PROT_WRITE | PROT_READ, MAP_PRIVATE |  MAP_ANONYMOUS, 0, 0);
 	if ( stack == MAP_FAILED ) {
 		perror ("mmap failed");
+		exit (EXIT_FAILURE);
+	}
+
+	const int n = read (STDIN_FILENO, code, area_size);
+	if ( n < 0 ) {
+		perror ("can't read");
 		exit (EXIT_FAILURE);
 	}
 

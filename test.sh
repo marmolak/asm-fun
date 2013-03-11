@@ -1,16 +1,24 @@
 #!/bin/bash
 
-make loader
+rm -f shellcode-test.bin 2> /dev/null
+make shellcode-test
+if [ ! -s "./shellcode-test.bin" ]; then
+	echo "FAIL: make shellcode-test";
+	exit;
+fi
+
+rm -f loader 2> /dev/null
+make loader 2> /dev/null
 if [ ! -x "./loader" ]; then
-	echo "FAIL: make";
+	echo "FAIL: make loader";
 	exit;
 fi
 
 ./loader > /dev/null &
 LOADER_PID=$!
 
-rm blob.bin 2> /dev/null
-OUTPUT=`perl ./blob.pl; cat blob.bin | nc localhost 12345`
+rm -f blob.bin 2> /dev/null
+OUTPUT=`cat shellcode-test.bin | nc localhost 12345`
 
 if [ "$OUTPUT" == "Hell" ]; then
 	echo -n "PASS with: ";
@@ -20,4 +28,7 @@ else
 	echo $OUTPUT;
 fi
 
+# make clean is better way
+rm -f shellcode-test.bin 2> /dev/null
+rm -f loader 2> /dev/null
 kill $LOADER_PID

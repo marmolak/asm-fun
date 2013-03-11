@@ -17,22 +17,6 @@
 static const int loader_len = 8;
 static const int area_size = 4096;
 
-void loader_impl (long *const code, char *const stack) {
-
-	/* fun with stack */
-	long *point = (long *) &point + 2;
-	(*point) = (long *) code;
-
-	asm ("mov rsi, %0;"
-	     "mov r15, %1;"
-		: /* no output */
-		: "r" (code + 1), "r" (stack)
-		: "%rsi"
-	);
-
-	return; /* never return - skip to code */
-}
-
 void loader (long *const code, char *const stack)
 {
 	char *const stack_top = stack + (area_size - 1);
@@ -162,7 +146,7 @@ int main (void)
 		exit (EXIT_FAILURE);
 	}
 	int on = 1;
-	setsockopt( sock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on) );
+	setsockopt (sock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
 	
 	if ( bind (sock, (struct sockaddr *)&server , sizeof (server)) < 0) {
 		perror ("bind failed. Error");

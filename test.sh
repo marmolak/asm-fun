@@ -29,11 +29,10 @@ OUTPUT=`cat shellcode-test.bin | nc localhost 12345`
 
 if [ "$OUTPUT" == "Hell" ]; then
 	echo -n "PASS with: ";
-	echo $OUTPUT;
 else
 	echo -n "FAIL with: ";
-	echo $OUTPUT;
 fi
+echo $OUTPUT;
 
 # make clean is better way
 rm -f shellcode-test.bin 2> /dev/null

@@ -9,10 +9,12 @@ fi
 ./loader > /dev/null &
 LOADER_PID=$!
 
+rm blob.bin 2> /dev/null
 OUTPUT=`perl ./blob.pl; cat blob.bin | nc localhost 12345`
 
 if [ "$OUTPUT" == "Hell" ]; then
-	echo "PASS";
+	echo -n "PASS with: ";
+	echo $OUTPUT;
 else
 	echo -n "FAIL with: ";
 	echo $OUTPUT;

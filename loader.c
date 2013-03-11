@@ -48,27 +48,25 @@ void loader (long *const code, char *const stack)
 	loader_impl (code, stack_top);
 }
 
+void another_loader (long *const code, char *const stack)
+{
+	char *const stack_top = stack + (area_size - 1);
+	asm ( "mov rsp, %1;"
+              "mov rbp, %1;"
+	      "push %0;"
+	      "push %0;"
+	      "ret;"
+		: /* no input */
+		: "r" (code), "r" (stack_top)
+		: /* nothing */
+	);
+}
+
 void prepare_castle (long *const code, char *const stack)
 {
 
 }
 
-void another_loader (long *const code, char *const stack)
-{
-	printf (" "); // strange but works in debug mode
-	asm ("mov rsp, %1;"
-	     "mov rbp, %1;"
-	     "mov r15, %1;"
-	     "mov rsi, %0;"
-	     "push %0;"
-	     "ret;"
-	        : /* no output */
-		: "r" (code), "r" (stack)
-		: "%rsi", "%r15"
-	);
-
-	return; /* never return */
-}
 
 void child_sig_handler (int signum, siginfo_t *siginfo, void *blank)
 {
@@ -148,7 +146,7 @@ void child_work (void)
 #endif
 
 	prepare_castle (code, stack);
-	loader (code, stack);
+	another_loader (code, stack);
 
 	// never happen?
 	munmap (code, 1024);

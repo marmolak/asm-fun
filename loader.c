@@ -35,21 +35,6 @@ void loader_impl (long *const code, char *const stack) {
 
 void loader (long *const code, char *const stack)
 {
-	/* prepare machine */
-	/* stack grows down */
-	char *const stack_top = stack + (area_size - 1);
-
-	/* set rbp and rsp properly after start - save start to stack */
-	/* must be aligned */
-	const char *const set_stack = "\x90\x4c\x89\xfd\x4c\x89\xfc\x56"; /* mov ebp, r15; mov esp, r15; push rsi; */
-	memcpy (code, set_stack, loader_len);
-
-	/* probably never return */
-	loader_impl (code, stack_top);
-}
-
-void another_loader (long *const code, char *const stack)
-{
 	char *const stack_top = stack + (area_size - 1);
 	asm ( "mov rsp, %1;"
               "mov rbp, %1;"
@@ -146,7 +131,7 @@ void child_work (void)
 #endif
 
 	prepare_castle (code, stack);
-	another_loader (code, stack);
+	loader (code, stack);
 
 	// never happen?
 	munmap (code, 1024);

@@ -14,6 +14,8 @@
 
 #include <errno.h>
 
+#include "castle.h"
+
 static const int loader_len = 8;
 static const int area_size = 4096;
 
@@ -31,13 +33,12 @@ void loader (long *const code, char *const stack)
 	);
 }
 
-void prepare_castle (long *const code, char *const stack)
-{
-
-}
-
 void child_sig_handler (int signum, siginfo_t *siginfo, void *blank)
 {
+	/* shut up gcc */
+	(void) siginfo;
+	(void) blank;
+
 	switch ( signum ) {
 		case SIGILL:
 		case SIGSEGV:
@@ -53,6 +54,10 @@ void child_sig_handler (int signum, siginfo_t *siginfo, void *blank)
 
 void parent_sigchld_handler (int signum, siginfo_t *siginfo, void *blank)
 {
+	/* shut up gcc */
+	(void) siginfo;
+	(void) blank;
+
 	if ( signum != SIGCHLD ) {
 		return;
 	}

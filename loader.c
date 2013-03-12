@@ -47,6 +47,14 @@ void loader (long *const code, char *const stack)
 	      "xorps xmm5, xmm5;"
 	      "xorps xmm6, xmm6;"
 	      "xorps xmm7, xmm7;"
+	      "xorps xmm8, xmm8;"
+	      "xorps xmm9, xmm9;"
+	      "xorps xmm10, xmm10;"
+	      "xorps xmm11, xmm11;"
+	      "xorps xmm12, xmm12;"
+	      "xorps xmm13, xmm13;"
+	      "xorps xmm14, xmm14;"
+	      "xorps xmm15, xmm15;"
 	      "ret;"
 		: /* no input */
 		: "r" (code), "r" (stack_top)

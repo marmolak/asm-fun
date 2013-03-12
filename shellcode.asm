@@ -3,14 +3,10 @@
 global _start
 section .text
 _start:
-	call where
-where:
-	pop rsi
-	jmp short skip
-	db 'Hell', 0AH
-skip:
+	jmp message
+dowork:
 	; address of message
-	add si, 3
+	pop rsi
 
 	; syscall number - 1 write
 	xor rax,rax
@@ -31,4 +27,7 @@ skip:
 	inc di
 	inc di
 	syscall
+message:
+	call dowork
+	db 'Hell', 0AH
 

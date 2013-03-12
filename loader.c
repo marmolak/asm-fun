@@ -25,7 +25,6 @@ void loader (long *const code, char *const stack)
 	asm ( "mov rsp, %1;"
               "mov rbp, %1;"
 	      "push %0;"
-	      "push %0;"
 	      "ret;"
 		: /* no input */
 		: "r" (code), "r" (stack_top)

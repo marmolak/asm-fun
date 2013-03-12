@@ -9,7 +9,7 @@ exec: exec.asm
 	ld -o exec exec.o
 
 loader: loader.c castle.c
-	gcc -Wall -Wextra -g -masm=intel -o loader loader.c castle.c
+	gcc -pipe -Wall -Wextra -g -masm=intel -o loader loader.c castle.c
 
 debug: loader.c castle.c
-	gcc -D DEBUG -Wall -Wextra -g -masm=intel -o loader loader.c castle.c
+	gcc -pipe -D DEBUG -Wall -Wextra -g -masm=intel -o loader loader.c castle.c

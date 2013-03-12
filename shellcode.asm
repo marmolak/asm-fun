@@ -5,9 +5,12 @@ section .text
 _start:
 	call where
 where:
-	; address of message
 	pop rsi
-	add si, 41
+	jmp short skip
+	db 'Hell', 0AH
+skip:
+	; address of message
+	add si, 3
 
 	; syscall number - 1 write
 	xor rax,rax
@@ -28,4 +31,4 @@ where:
 	inc di
 	inc di
 	syscall
-	db 'Hell', 0AH
+

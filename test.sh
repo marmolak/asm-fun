@@ -1,5 +1,7 @@
 #!/bin/bash
 
+FILES_STATE=`find ./`;
+
 rm -f shellcode-test.bin 2> /dev/null
 make shellcode-test
 if [ ! -s "./shellcode-test.bin" ]; then
@@ -38,3 +40,7 @@ echo $OUTPUT;
 rm -f shellcode-test.bin 2> /dev/null
 rm -f loader 2> /dev/null
 kill $LOADER_PID
+
+FILES_STATE_NEW=`find ./`;
+
+diff <(echo $FILES_STATE) <(echo $FILES_STATE_NEW)

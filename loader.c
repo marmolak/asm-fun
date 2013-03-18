@@ -106,7 +106,7 @@ void child_work (void)
 		sa.sa_sigaction = &child_sig_handler;
 		sa.sa_flags = SA_SIGINFO;
 
-		int ret = 0;
+		int ret = -1;
 		ret = sigaction (SIGILL, &sa, NULL);
 		if ( ret == -1 ) { exit (EXIT_FAILURE); }
 		ret = sigaction (SIGSEGV, &sa, NULL);

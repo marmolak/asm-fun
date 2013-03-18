@@ -194,8 +194,8 @@ void child_work (void)
 	loader (code, stack);
 
 	// never happen?
-	munmap (code, 1024);
-	munmap (stack, 1024);
+	munmap (code, area_size);
+	munmap (stack, area_size);
 }
 
 void run_child (int sock) {

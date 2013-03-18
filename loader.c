@@ -167,7 +167,7 @@ void set_sandbox (void)
 
 void child_work (void)
 {
-	/* set signal handlers - gdb souces style ;) */
+	/* set signal handlers - gdb sources style ;) */
 	{
 		struct sigaction sa;
 

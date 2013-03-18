@@ -139,30 +139,58 @@ void child_work (void)
 	prepare_castle (code, stack);
 	
 	/* init_sandbox */
-	{
-		/* seccomp */
-		scmp_filter_ctx sfcx = seccomp_init (SCMP_ACT_KILL);
-		if ( sfcx == NULL ) {
-			perror ("Seccomp failed!");
-			return;
-		}
-
-		int ret = -1;
-
-		ret = seccomp_rule_add (sfcx, SCMP_ACT_KILL, SCMP_SYS(execve), 0);
-		errno = -ret;
-		if ( ret < 0 ) {
-			perror ("Seccomp add rule failed");
-			return;
-		}
-
-		ret = seccomp_load (sfcx);
-		errno = -ret;
-		if ( ret < 0 ) {
-			perror ("Seccomp load filter failed");
-			return;
-		}
+	/* seccomp */
+	scmp_filter_ctx sfcx = seccomp_init (SCMP_ACT_TRAP);
+	if ( sfcx == NULL ) {
+		perror ("Seccomp failed!");
+		return;
 	}
+
+	int ret = -1;
+
+	/* for signal handlers :( */
+	ret = seccomp_rule_add (sfcx, SCMP_ACT_ALLOW, SCMP_SYS(mmap), 0);
+	if ( ret < 0 ) {
+		errno = -ret;
+		perror ("Seccomp add rule failed");
+		return;
+	}
+	ret = seccomp_rule_add (sfcx, SCMP_ACT_ALLOW, SCMP_SYS(fstat), 0);
+	if ( ret < 0 ) {
+		errno = -ret;
+		perror ("Seccomp add rule failed");
+		return;
+	}
+	ret = seccomp_rule_add (sfcx, SCMP_ACT_ALLOW, SCMP_SYS(exit_group), 0);
+	if ( ret < 0 ) {
+		errno = -ret;
+		perror ("Seccomp add rule failed");
+		return;
+	}
+	/* end of signal handler :( */
+
+	ret = seccomp_rule_add (sfcx, SCMP_ACT_ALLOW, SCMP_SYS(exit), 0);
+	if ( ret < 0 ) {
+		errno = -ret;
+		perror ("Seccomp add rule failed");
+		return;
+	}
+
+	ret = seccomp_rule_add (sfcx, SCMP_ACT_ALLOW, SCMP_SYS(write), 0);
+	if ( ret < 0 ) {
+		errno = -ret;
+		perror ("Seccomp add rule failed");
+		return;
+	}
+
+	ret = seccomp_load (sfcx);
+	if ( ret < 0 ) {
+		errno = -ret;
+		perror ("Seccomp load filter failed");
+		return;
+	}
+	/* end sandbox init */
+
 	loader (code, stack);
 
 	// never happen?

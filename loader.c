@@ -14,6 +14,8 @@
 
 #include <errno.h>
 
+#include <seccomp.h>
+
 #include "castle.h"
 
 static const int loader_len = 8;
@@ -106,7 +108,7 @@ void child_work (void)
 		sa.sa_sigaction = &child_sig_handler;
 		sa.sa_flags = SA_SIGINFO;
 
-		int ret = 0;
+		int ret = -1;
 		ret = sigaction (SIGILL, &sa, NULL);
 		if ( ret == -1 ) { exit (EXIT_FAILURE); }
 		ret = sigaction (SIGSEGV, &sa, NULL);
@@ -135,6 +137,30 @@ void child_work (void)
 	}
 
 	prepare_castle (code, stack);
+	
+	/* init_sandbox */
+	{
+		/* seccomp */
+		scmp_filter_ctx sfcx = seccomp_init (SCMP_ACT_KILL);
+		if ( sfcx == NULL ) {
+			perror ("Seccomp failed!");
+			return;
+		}
+
+		int ret = -1;
+
+		ret = seccomp_rule_add (sfcx, SCMP_ACT_KILL, SCMP_SYS(execve), 0);
+		if ( ret < 0 ) {
+			perror ("Seccomp add rule failed");
+			return;
+		}
+
+		ret = seccomp_load (sfcx);
+		if ( ret < 0 ) {
+			perror ("Seccomp load filter failed");
+			return;
+		}
+	}
 	loader (code, stack);
 
 	// never happen?

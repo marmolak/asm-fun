@@ -150,12 +150,14 @@ void child_work (void)
 		int ret = -1;
 
 		ret = seccomp_rule_add (sfcx, SCMP_ACT_KILL, SCMP_SYS(execve), 0);
+		errno = -ret;
 		if ( ret < 0 ) {
 			perror ("Seccomp add rule failed");
 			return;
 		}
 
 		ret = seccomp_load (sfcx);
+		errno = -ret;
 		if ( ret < 0 ) {
 			perror ("Seccomp load filter failed");
 			return;

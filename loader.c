@@ -15,10 +15,11 @@
 #include <errno.h>
 
 #include <seccomp.h>
+#include <setjmp.h>
 
 #include "castle.h"
+jmp_buf get_control;
 
-static const int loader_len = 8;
 static const int area_size = 4096;
 
 void loader (long *const code, char *const stack)
@@ -80,6 +81,8 @@ void child_sig_handler (int signum, siginfo_t *siginfo, void *blank)
 			printf ("wtf? signum: %d", signum);
 			break;
 	}
+
+	siglongjmp (get_control, 0);
 	exit (0);
 }
 
@@ -98,46 +101,8 @@ void parent_sigchld_handler (int signum, siginfo_t *siginfo, void *blank)
 	while ((pid = waitpid (-1, &status, WNOHANG)) > 0) { }
 }
 
-void child_work (void)
+void set_sandbox (void)
 {
-	/* set signal handlers - gdb souces style ;) */
-	{
-		struct sigaction sa;
-
-		memset (&sa, 0, sizeof (sa));
-		sa.sa_sigaction = &child_sig_handler;
-		sa.sa_flags = SA_SIGINFO;
-
-		int ret = -1;
-		ret = sigaction (SIGILL, &sa, NULL);
-		if ( ret == -1 ) { exit (EXIT_FAILURE); }
-		ret = sigaction (SIGSEGV, &sa, NULL);
-		if ( ret == -1 ) { exit (EXIT_FAILURE); }
-		ret = sigaction (SIGBUS, &sa, NULL);
-		if ( ret == -1 ) { exit (EXIT_FAILURE); }
-
-	}
-
-	/* allocate memory for code and stack */
-	long *const code = mmap (NULL, area_size, PROT_EXEC | PROT_WRITE | PROT_READ, MAP_PRIVATE |  MAP_ANONYMOUS, 0, 0);
-	if ( code == MAP_FAILED ) {
-		perror ("mmap failed");
-		exit (EXIT_FAILURE);
-	}
-	char *const stack = mmap (NULL, area_size, PROT_EXEC | PROT_WRITE | PROT_READ, MAP_PRIVATE |  MAP_ANONYMOUS, 0, 0);
-	if ( stack == MAP_FAILED ) {
-		perror ("mmap failed");
-		exit (EXIT_FAILURE);
-	}
-
-	const int n = read (STDIN_FILENO, code, area_size);
-	if ( n < 0 ) {
-		perror ("can't read");
-		exit (EXIT_FAILURE);
-	}
-
-	prepare_castle (code, stack);
-	
 	/* init_sandbox */
 	/* seccomp */
 	scmp_filter_ctx sfcx = seccomp_init (SCMP_ACT_TRAP);
@@ -183,15 +148,67 @@ void child_work (void)
 		return;
 	}
 
+	ret = seccomp_rule_add (sfcx, SCMP_ACT_ALLOW, SCMP_SYS(munmap), 0);
+	if ( ret < 0 ) {
+		errno = -ret;
+		perror ("Seccomp add rule failed");
+		return;
+	}
+
 	ret = seccomp_load (sfcx);
 	if ( ret < 0 ) {
 		errno = -ret;
 		perror ("Seccomp load filter failed");
 		return;
 	}
+	seccomp_release (sfcx);
 	/* end sandbox init */
+}
 
-	loader (code, stack);
+void child_work (void)
+{
+	/* set signal handlers - gdb souces style ;) */
+	{
+		struct sigaction sa;
+
+		memset (&sa, 0, sizeof (sa));
+		sa.sa_sigaction = &child_sig_handler;
+		sa.sa_flags = SA_SIGINFO;
+
+		int ret = -1;
+		ret = sigaction (SIGILL, &sa, NULL);
+		if ( ret == -1 ) { exit (EXIT_FAILURE); }
+		ret = sigaction (SIGSEGV, &sa, NULL);
+		if ( ret == -1 ) { exit (EXIT_FAILURE); }
+		ret = sigaction (SIGBUS, &sa, NULL);
+		if ( ret == -1 ) { exit (EXIT_FAILURE); }
+	}
+
+	/* allocate memory for code and stack */
+	long *const code = mmap (NULL, area_size, PROT_EXEC | PROT_WRITE | PROT_READ, MAP_PRIVATE |  MAP_ANONYMOUS, 0, 0);
+	if ( code == MAP_FAILED ) {
+		perror ("mmap failed");
+		exit (EXIT_FAILURE);
+	}
+	char *const stack = mmap (NULL, area_size, PROT_EXEC | PROT_WRITE | PROT_READ, MAP_PRIVATE |  MAP_ANONYMOUS, 0, 0);
+	if ( stack == MAP_FAILED ) {
+		perror ("mmap failed");
+		exit (EXIT_FAILURE);
+	}
+
+	const int n = read (STDIN_FILENO, code, area_size);
+	if ( n < 0 ) {
+		perror ("can't read");
+		exit (EXIT_FAILURE);
+	}
+
+	prepare_castle (code, stack);
+
+	set_sandbox ();
+
+	if ( sigsetjmp (get_control, 0) == 0 ) {
+		loader (code, stack);
+	}
 
 	// never happen?
 	munmap (code, area_size);

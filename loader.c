@@ -113,7 +113,8 @@ void child_work (void)
 		if ( ret == -1 ) { exit (EXIT_FAILURE); }
 		ret = sigaction (SIGBUS, &sa, NULL);
 		if ( ret == -1 ) { exit (EXIT_FAILURE); }
-
+		ret = sigaction (SIGFPE, &sa, NULL);
+		if ( ret == -1 ) { exit (EXIT_FAILURE); }
 	}
 
 	/* allocate memory for code and stack */

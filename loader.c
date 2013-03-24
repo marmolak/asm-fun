@@ -13,11 +13,38 @@
 #include <sys/socket.h>
 
 #include <errno.h>
+#include <time.h>
+#include <stdarg.h>
 
 #include "castle.h"
 
 static const int loader_len = 8;
 static const int area_size = 4096;
+
+void do_log (const char *const fmt, ...)
+{
+	struct tm w;
+	const time_t now = time (NULL);
+
+	va_list ap;
+	va_start (ap, fmt);
+	const int bsize = vsnprintf (NULL, 0, fmt, ap);
+	va_end (ap);
+
+	char msg [bsize];
+	va_start (ap, fmt);
+	vsnprintf (msg, bsize, fmt, ap);
+	va_end (ap);
+
+	if ( localtime_r (&now, &w) == NULL ) {
+		memset (&w, 0, sizeof (w));
+	}
+
+	w.tm_year += 1900;
+	++w.tm_mon;	
+
+	printf ("%d-%.2d-%.2d %.2d:%.2d:%.2d:\t%s\n", w.tm_year, w.tm_mon, w.tm_mday, w.tm_hour, w.tm_min, w.tm_sec, msg);
+}
 
 void loader (long *const code, char *const stack)
 {
@@ -93,7 +120,9 @@ void parent_sigchld_handler (int signum, siginfo_t *siginfo, void *blank)
 
 	int status = 0;
 	pid_t pid = 0;
-	while ((pid = waitpid (-1, &status, WNOHANG)) > 0) { }
+	while ((pid = waitpid (-1, &status, WNOHANG)) > 0) { 
+		do_log ("END: [%d] - child exited", pid);
+	}
 }
 
 void child_work (void)
@@ -138,18 +167,18 @@ void child_work (void)
 	prepare_castle (code, stack);
 	loader (code, stack);
 
-	// never happen?
+	/* never happen? */
 	munmap (code, area_size);
 	munmap (stack, area_size);
 }
 
-void run_child (int sock) {
+pid_t run_child (int sock) {
 
 	pid_t pid = fork ();
 
 	if ( pid == -1 ) {
 		perror ("can't fork!");
-		return;
+		return pid;
 	} else if ( pid == 0 ) {
 		dup2 (sock, STDOUT_FILENO);
 		dup2 (sock, STDIN_FILENO);
@@ -161,9 +190,13 @@ void run_child (int sock) {
 		exit (EXIT_SUCCESS);
 	} else if ( pid > 0 ) {
 		close (sock);
-		return;
+		return pid;
 	}
+
+	return -1;
 }
+
+
 
 int main (void)
 {
@@ -220,8 +253,9 @@ int main (void)
 			perror ("accept error!");
 			continue;
 		}
-		printf ("CONN: client: %s\n", inet_ntoa (client.sin_addr));
-		run_child (client_sock);
+		const pid_t pid = run_child (client_sock);
+		
+		do_log ("CONN: client: [%s] - pid: [%d]\n", inet_ntoa (client.sin_addr), pid);
 	}
 
 	return EXIT_SUCCESS;

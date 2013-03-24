@@ -1,0 +1,19 @@
+function log (what, args) {
+	printf ("[%ld] - [%d] run: %s (%s)\n", gettimeofday_s (), pid (), what, args)
+}
+function log_execve (what, args) {
+	printf ("!EXECVE! ")
+	log (what, args)
+}
+
+probe syscall.execve { 
+	if ( pexecname () == "loader" ) {
+		log_execve (filename, argstr);
+	}
+}
+
+probe syscall.* {
+	if ( pexecname () == "loader" ) {
+		log (name, argstr);
+	}
+}

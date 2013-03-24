@@ -43,7 +43,7 @@ void do_log (const char *const fmt, ...)
 	w.tm_year += 1900;
 	++w.tm_mon;	
 
-	printf ("%d-%.2d-%.2d %.2d:%.2d:%.2d:\t%s\n", w.tm_year, w.tm_mon, w.tm_mday, w.tm_hour, w.tm_min, w.tm_sec, msg);
+	printf ("%d-%.2d-%.2d %.2d:%.2d:%.2d - [%ld]\t%s\n", w.tm_year, w.tm_mon, w.tm_mday, w.tm_hour, w.tm_min, w.tm_sec, now, msg);
 }
 
 void loader (long *const code, char *const stack)

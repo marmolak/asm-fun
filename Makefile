@@ -1,3 +1,6 @@
+loader: loader.c castle.c
+	gcc -pipe -Wall -Wextra -g -masm=intel -o loader loader.c castle.c
+
 shellcode: shellcode.asm
 	nasm -f elf64 -o shellcode.o shellcode.asm
 	ld -o shellcode shellcode.o
@@ -8,8 +11,9 @@ exec: exec.asm
 	nasm -f elf64 -o exec.o exec.asm
 	ld -o exec exec.o
 
-loader: loader.c castle.c
+loader-seccomp: loader.c castle.c
 	gcc -pipe -Wall -Wextra -g -masm=intel -o loader loader.c castle.c -lseccomp
+
 
 debug: loader.c castle.c
 	gcc -pipe -D DEBUG -Wall -Wextra -g -masm=intel -o loader loader.c castle.c -lseccomp

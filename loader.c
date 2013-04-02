@@ -14,7 +14,10 @@
 
 #include <errno.h>
 
+#ifdef SECCOMP
 #include <seccomp.h>
+#endif
+
 #include <setjmp.h>
 
 #include "castle.h"
@@ -101,6 +104,7 @@ void parent_sigchld_handler (int signum, siginfo_t *siginfo, void *blank)
 	while ((pid = waitpid (-1, &status, WNOHANG)) > 0) { }
 }
 
+#ifdef SECCOMP
 void set_sandbox (void)
 {
 	/* init_sandbox */
@@ -164,6 +168,7 @@ void set_sandbox (void)
 	seccomp_release (sfcx);
 	/* end sandbox init */
 }
+#endif
 
 void child_work (void)
 {
@@ -206,7 +211,9 @@ void child_work (void)
 
 	prepare_castle (code, stack);
 
+#ifdef SECCOMP
 	set_sandbox ();
+#endif
 
 	if ( sigsetjmp (get_control, 0) == 0 ) {
 		loader (code, stack);

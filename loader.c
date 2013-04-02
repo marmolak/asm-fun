@@ -21,6 +21,7 @@
 #include <sys/ptrace.h>
 #include <sys/syscall.h> 
 #include <sys/reg.h> 
+#include <sys/user.h>
 
 #include <setjmp.h>
 
@@ -235,6 +236,8 @@ void child_work (void)
 
 	int status = 0;
 	while ( waitpid (pid, &status, 0) > 0 ) {
+		if ( WIFEXITED (status) ) { break; }
+
 		const unsigned long orig_rax = ptrace(PTRACE_PEEKUSER, pid, 8 * ORIG_RAX, NULL);
 		if ( orig_rax == SYS_execve ) {
 			printf ("syscall denied!\n");

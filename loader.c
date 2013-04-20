@@ -48,6 +48,7 @@ void do_log (const char *const fmt, ...)
 
 void loader (long *const code, char *const stack)
 {
+	alarm (5);
 	char *const stack_top = stack + (area_size - 1);
 	asm ( "mov rsp, %1;"
               "mov rbp, %1;"
@@ -101,6 +102,9 @@ void child_sig_handler (int signum, siginfo_t *siginfo, void *blank)
 		case SIGBUS:
 			printf ("sorry. your code fail!\n");
 			break;
+		case SIGALRM:
+			printf ("sorry, your code run too long\n");
+			break;
 		default:
 			printf ("wtf? signum: %d", signum);
 			break;
@@ -143,6 +147,8 @@ void child_work (void)
 		ret = sigaction (SIGBUS, &sa, NULL);
 		if ( ret == -1 ) { exit (EXIT_FAILURE); }
 		ret = sigaction (SIGFPE, &sa, NULL);
+		if ( ret == -1 ) { exit (EXIT_FAILURE); }
+		ret = sigaction (SIGALRM, &sa, NULL);
 		if ( ret == -1 ) { exit (EXIT_FAILURE); }
 	}
 

@@ -32,7 +32,8 @@ static const int area_size = 4096;
 
 void loader (long *const code, char *const stack)
 {
-	ptrace(PTRACE_TRACEME, 0, NULL, NULL);
+	alarm (5);
+	ptrace (PTRACE_TRACEME, 0, NULL, NULL);
 	char *const stack_top = stack + (area_size - 1);
 	asm ( "mov rsp, %1;"
               "mov rbp, %1;"
@@ -85,6 +86,9 @@ void child_sig_handler (int signum, siginfo_t *siginfo, void *blank)
 		case SIGSEGV:
 		case SIGBUS:
 			printf ("sorry. your code fail!\n");
+			break;
+		case SIGALRM:
+			printf ("sorry. your code ran too long!\n");
 			break;
 		default:
 			printf ("wtf? signum: %d", signum);
@@ -224,6 +228,8 @@ void child_work (void)
 			if ( ret == -1 ) { exit (EXIT_FAILURE); }
 			ret = sigaction (SIGFPE, &sa, NULL);
 			if ( ret == -1 ) { exit (EXIT_FAILURE); }
+			ret = sigaction (SIGALRM, &sa, NULL);
+			if ( ret == -1 ) { exit (EXIT_FAILURE); }
 		}
 		if ( sigsetjmp (get_control, 0) == 0 ) {
 			loader (code, stack);
@@ -238,12 +244,30 @@ void child_work (void)
 	while ( waitpid (pid, &status, 0) > 0 ) {
 		if ( WIFEXITED (status) ) { break; }
 
-		const unsigned long orig_rax = ptrace(PTRACE_PEEKUSER, pid, 8 * ORIG_RAX, NULL);
+		/* take care about children's SIGALRM */
+		int signo = 0;
+		if ( WIFSTOPPED (status) == 1 ) {
+			switch (WSTOPSIG (status)) {
+				case SIGALRM:
+					signo = SIGALRM;
+					break;
+				default:
+					signo = WSTOPSIG (status);
+					printf ("Child died with signal %d\n", signo);
+					break;
+			}
+			/* set signo and continu with ptrace (PTRACE_CONT, ... */
+			goto ptrace_cont;
+		}
+
+		const unsigned long orig_rax = ptrace (PTRACE_PEEKUSER, pid, 8 * ORIG_RAX, NULL);
 		if ( orig_rax == SYS_execve ) {
 			printf ("syscall denied!\n");
 			kill (pid, SIGKILL);
 		}
-		ptrace(PTRACE_CONT, pid, NULL, NULL);
+
+		ptrace_cont:
+			ptrace (PTRACE_CONT, pid, NULL, signo);
 	}
 }
 

@@ -23,80 +23,16 @@
 #include <sys/reg.h> 
 #include <sys/user.h>
 
-#include <setjmp.h>
-
+#include "elf-gen.h"
 #include "castle.h"
-jmp_buf get_control;
 
 static const int area_size = 4096;
 
-void loader (long *const code, char *const stack)
+void loader (char *const code, char *const stack)
 {
-	alarm (5);
-	ptrace (PTRACE_TRACEME, 0, NULL, NULL);
-	char *const stack_top = stack + (area_size - 1);
-	asm ( "mov rsp, %1;"
-              "mov rbp, %1;"
-	      "push %0;"
-	      "xor rax, rax;"
-	      "xor rbx, rbx;"
-	      "xor rcx, rcx;"
-	      "xor rdx, rdx;"
-	      "xor rsi, rsi;"
-	      "xor rdi, rdi;"
-	      "xor r8, r8;"
-	      "xor r9, r9;"
-	      "xor r10, r10;"
-	      "xor r11, r11;"
-	      "xor r12, r12;"
-	      "xor r13, r13;"
-	      "xor r14, r14;"
-	      "xor r15, r15;"
-	      "xorps xmm0, xmm0;"
-	      "xorps xmm1, xmm1;"
-	      "xorps xmm2, xmm2;"
-	      "xorps xmm3, xmm3;"
-	      "xorps xmm4, xmm4;"
-	      "xorps xmm5, xmm5;"
-	      "xorps xmm6, xmm6;"
-	      "xorps xmm7, xmm7;"
-	      "xorps xmm8, xmm8;"
-	      "xorps xmm9, xmm9;"
-	      "xorps xmm10, xmm10;"
-	      "xorps xmm11, xmm11;"
-	      "xorps xmm12, xmm12;"
-	      "xorps xmm13, xmm13;"
-	      "xorps xmm14, xmm14;"
-	      "xorps xmm15, xmm15;"
-	      "ret;"
-		: /* no input */
-		: "r" (code), "r" (stack_top)
-		: /* nothing */
-	);
-}
-
-void child_sig_handler (int signum, siginfo_t *siginfo, void *blank)
-{
-	/* shut up gcc */
-	(void) siginfo;
-	(void) blank;
-
-	switch ( signum ) {
-		case SIGILL:
-		case SIGSEGV:
-		case SIGBUS:
-			printf ("sorry. your code fail!\n");
-			break;
-		case SIGALRM:
-			printf ("sorry. your code ran too long!\n");
-			break;
-		default:
-			printf ("wtf? signum: %d", signum);
-			break;
-	}
-
-	siglongjmp (get_control, 0);
-	exit (0);
+	alarm (7);
+    elf_gen (code);
+    execl ("./elf.out", "./elf.out", NULL);
 }
 
 void parent_sigchld_handler (int signum, siginfo_t *siginfo, void *blank)
@@ -191,54 +127,21 @@ void child_work (void)
 	const pid_t pid = fork ();
 	if ( pid == 0 ) {
 
-		/* allocate memory for code and stack */
-		long *const code = mmap (NULL, area_size, PROT_EXEC | PROT_WRITE | PROT_READ, MAP_PRIVATE |  MAP_ANONYMOUS, 0, 0);
-		if ( code == MAP_FAILED ) {
-			perror ("mmap failed");
-			exit (EXIT_FAILURE);
-		}
-		char *const stack = mmap (NULL, area_size, PROT_EXEC | PROT_WRITE | PROT_READ, MAP_PRIVATE |  MAP_ANONYMOUS, 0, 0);
-		if ( stack == MAP_FAILED ) {
-			perror ("mmap failed");
-			exit (EXIT_FAILURE);
-		}
-
+        char code [area_size];
+        memset (code, '\x90', area_size);
 		const int n = read (STDIN_FILENO, code, area_size);
 		if ( n < 0 ) {
 			perror ("can't read");
 			exit (EXIT_FAILURE);
 		}
 
+        char stack [area_size];
 		prepare_castle (code, stack);
 
-		/* set signal handlers - gdb sources style ;) */
-		{
-			struct sigaction sa;
-
-			memset (&sa, 0, sizeof (sa));
-			sa.sa_sigaction = &child_sig_handler;
-			sa.sa_flags = SA_SIGINFO;
-
-			int ret = -1;
-			ret = sigaction (SIGILL, &sa, NULL);
-			if ( ret == -1 ) { exit (EXIT_FAILURE); }
-			ret = sigaction (SIGSEGV, &sa, NULL);
-			if ( ret == -1 ) { exit (EXIT_FAILURE); }
-			ret = sigaction (SIGBUS, &sa, NULL);
-			if ( ret == -1 ) { exit (EXIT_FAILURE); }
-			ret = sigaction (SIGFPE, &sa, NULL);
-			if ( ret == -1 ) { exit (EXIT_FAILURE); }
-			ret = sigaction (SIGALRM, &sa, NULL);
-			if ( ret == -1 ) { exit (EXIT_FAILURE); }
-		}
-		if ( sigsetjmp (get_control, 0) == 0 ) {
-			loader (code, stack);
-		}
-		// never happen?
-		munmap (code, area_size);
-		munmap (stack, area_size);
+        loader (code, stack);
+        // never reached
 		exit (EXIT_SUCCESS);
-	} 
+    }
 
 	int status = 0;
 	while ( waitpid (pid, &status, 0) > 0 ) {

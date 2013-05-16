@@ -1,5 +1,7 @@
+#define _GNU_SOURCE
 #include <elf.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 #include <unistd.h>
@@ -9,7 +11,7 @@
 
 #include "elf-gen.h"
 
-void elf_gen (const char const* code)
+void elf_gen (const char const* code, char *const bin_path)
 {
     const long page_size = sysconf (_SC_PAGESIZE);
     Elf64_Ehdr e;
@@ -55,8 +57,11 @@ void elf_gen (const char const* code)
 
     assert (page_size >= (sizeof (e) + sizeof (p) + sizeof (s)));
 
-    /* bad! */
-    const int fd = open ("elf.out", O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IXUSR);
+    char template [] =  "./elf-out-XXXXXX";  
+    const int fd = mkostemp (template, O_WRONLY | O_CREAT | O_TRUNC);
+    fchmod (fd, S_IRUSR | S_IXUSR);
+
+    /* open ("elf.out", O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IXUSR); */
     write (fd, &e, sizeof (e));
     write (fd, &p, sizeof (p));
     write (fd, &s, sizeof (s));
@@ -64,4 +69,6 @@ void elf_gen (const char const* code)
     lseek (fd, page_size, SEEK_SET);
     write (fd, code, page_size);
     close (fd);
+
+    strncpy (bin_path, template, strlen (template));
 }

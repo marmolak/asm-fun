@@ -31,8 +31,10 @@ static const int area_size = 4096;
 void loader (char *const code, char *const stack)
 {
 	alarm (7);
-    elf_gen (code);
-    execl ("./elf.out", "./elf.out", NULL);
+    char bin[17] = { 0 };
+
+    elf_gen (code, bin);
+    execl (bin, bin, NULL);
 }
 
 void parent_sigchld_handler (int signum, siginfo_t *siginfo, void *blank)

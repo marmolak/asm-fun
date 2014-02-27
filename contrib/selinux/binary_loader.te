@@ -1,0 +1,39 @@
+# Fedora 20 tested.
+policy_module(binary_loader, 1.0)
+require {
+    type unconfined_t;
+    role unconfined_r;
+	type user_home_t;
+	class file { write execute setattr read create execute_no_trans };
+}
+type binary_loader_t;
+type binary_loader_exec_t;
+
+domain_type(binary_loader_t)
+
+files_type(binary_loader_exec_t)
+
+domtrans_pattern(unconfined_t, binary_loader_exec_t, binary_loader_t)
+
+role_transition unconfined_r binary_loader_exec_t unconfined_r;
+role unconfined_r types binary_loader_t;
+allow binary_loader_t binary_loader_exec_t:file entrypoint;
+
+allow binary_loader_t binary_loader_exec_t:file read;
+
+userdom_use_inherited_user_ptys(binary_loader_t)
+
+allow binary_loader_t self:tcp_socket { create bind setopt  accept listen getattr };
+
+corenet_tcp_bind_generic_port(binary_loader_t)
+corenet_tcp_bind_generic_node(binary_loader_t)
+
+# Home work - Not home but cwd of loader process.
+userdom_append_user_home_content_files(binary_loader_t)
+
+allow binary_loader_t user_home_t:file { write execute setattr read create execute_no_trans };
+
+allow binary_loader_t self:tcp_socket { read write };
+allow binary_loader_t user_home_t:dir { write add_name };
+
+

@@ -120,8 +120,6 @@ void set_sandbox (void)
 
 void child_work (void)
 {
-
-
 #ifdef SECCOMP
 	set_sandbox ();
 #endif

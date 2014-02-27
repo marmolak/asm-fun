@@ -203,7 +203,7 @@ int main (void)
 #ifdef DEBUG
 	/* real debugging */
 	child_work ();
-	exit (EXIT_SUCCESS);
+	return EXIT_SUCCESS;
 #endif
 
 	struct sockaddr_in server;
@@ -216,7 +216,7 @@ int main (void)
 	int sock = socket(AF_INET , SOCK_STREAM , 0);
 	if ( sock == -1 ) {
 		perror ("socket failed");
-		exit (EXIT_FAILURE);
+		return EXIT_FAILURE;
 	}
 	int on = 1;
 	setsockopt (sock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
@@ -224,7 +224,7 @@ int main (void)
 	if ( bind (sock, (struct sockaddr *)&server , sizeof (server)) < 0) {
 		perror ("bind failed. Error");
 		close (sock);
-		exit (EXIT_FAILURE);
+		return EXIT_FAILURE;
 	}
 
 	if ( listen (sock, 100) == -1 ) {

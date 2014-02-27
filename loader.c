@@ -178,7 +178,7 @@ void child_work (void)
 
 void run_child (int sock) {
 
-	pid_t pid = fork ();
+	const pid_t pid = fork ();
 
 	if ( pid == -1 ) {
 		perror ("can't fork!");

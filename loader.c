@@ -251,7 +251,7 @@ int main (void)
 				continue;
 			}
 			perror ("accept error!");
-			continue;
+            return EXIT_FAILURE;
 		}
 		printf ("CONN: client: %s\n", inet_ntoa (client.sin_addr));
 		run_child (client_sock);

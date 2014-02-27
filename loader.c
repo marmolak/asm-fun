@@ -227,7 +227,11 @@ int main (void)
 		exit (EXIT_FAILURE);
 	}
 
-	listen (sock, 100);
+	if ( listen (sock, 100) == -1 ) {
+        perror ("listen failed.");
+        close (sock);
+        return EXIT_FAILURE;
+    }
 
 	/* set sigchld handler - gdb sources way ;) */
 	{

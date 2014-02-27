@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <assert.h>
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -34,7 +35,10 @@ void loader (char *const code, char *const stack)
     char bin[17] = { 0 };
 
     elf_gen (code, bin);
-    execl (bin, bin, NULL);
+    if ( execl (bin, bin, NULL) == -1 ) {
+        perror ("execl failed!");
+    }
+    exit (EXIT_FAILURE);
 }
 
 void parent_sigchld_handler (int signum, siginfo_t *siginfo, void *blank)
@@ -139,7 +143,9 @@ void child_work (void)
 		prepare_castle (code, stack);
 
         loader (code, stack);
-        // never reached
+        /* Never reached if everything works well.
+         * If not... then assert is your friend. */
+        assert (0);
 		exit (EXIT_SUCCESS);
     }
 

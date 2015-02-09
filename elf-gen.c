@@ -14,15 +14,11 @@
 void elf_gen (const char const* code, char *const bin_path)
 {
     const long page_size = sysconf (_SC_PAGESIZE);
-    Elf64_Ehdr e;
+    Elf64_Ehdr e = { 0 };
     /* code */
-    Elf64_Phdr p;
+    Elf64_Phdr p = { 0 };
     /* stack */
-    Elf64_Phdr s;
-
-    memset (&e, 0, sizeof (e));
-    memset (&p, 0, sizeof (p));
-    memset (&s, 0, sizeof (s));
+    Elf64_Phdr s = { 0 };
 
     e.e_ident [EI_MAG0] = ELFMAG0;
     e.e_ident [EI_MAG1] = ELFMAG1;
